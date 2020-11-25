@@ -1,5 +1,5 @@
 from flask import Flask,render_template
-
+import time from time
 class Blockchain:
 
 
@@ -10,6 +10,21 @@ class Blockchain:
         """
         self.transaction = []
         self.chain = []
+        #creating the genesis block
+        self.create_block(0,'00')
+    def create_block(self,nonce,previous_hash):
+        """
+        Add a block of trancsaction to the blockchain
+        """
+        block ={"block_number":len(self.chain) + 1,
+                "timestampt":time(),
+                "transaction":self.transaction,
+                "nonce":nonce,
+                "previous_hash":previous_hash
+                }
+        # Reset the transaction
+        self.transaction =[]
+        self.chain.append(block)
         
 #initialize the Blockchain Class
 blockchain = Blockchain()
