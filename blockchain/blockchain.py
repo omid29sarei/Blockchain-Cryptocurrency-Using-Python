@@ -1,5 +1,5 @@
 from flask import Flask,render_template
-import time from time
+from time import time
 class Blockchain:
 
 
