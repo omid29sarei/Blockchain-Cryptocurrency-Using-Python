@@ -7,10 +7,13 @@ from Crypto.Hash import SHA
 from collections import OrderedDict
 import binascii
 from uuid import uuid4
+import json
+import hashlib
 
 
 MINING_SENDER = 'The Blockchain'
 MINING_REWARD = 1
+MINING_DIFFICULTY = 2
 
 class Blockchain:
 
@@ -73,11 +76,32 @@ class Blockchain:
                 return len(self.chain) + 1
             else:
                 return False
+
+    @staticmethod
+    def valid_proof(transaction,last_hash,nonce,difficulty=MINING_DIFFICULTY):
+        guess = (str(transaction) + str(last_hash) + str(nonce)).encode('utf8')
+        h = hashlib.new('sha256')
+        h.update(guess)
+        guess_hashed = h.hexdigest()
+        return guess_hashed[:difficulty] == '0' * difficulty
+
     def proof_of_work(self):
-        return 12345
+        last_block = blockchain.chain[-1]
+        nonce = 0 
+        last_hash = self.hash(last_block)
+        while(self.valid_proof(self.transaction,last_hash,nonce)) is False:
+            nonce += 1
+
+        return nonce
     
-    def hash(self,block):
-        return 'abc'
+    @staticmethod
+    def hash(block):
+        # We Must To Ensure The Dictionary is Ordered, Otherwise we will get inconsistant hash
+        block_string = json.dumps(block,sort_keys=True).encode('utf8')
+        h = hashlib.new('sha256')
+        h.update(block_string)
+        result = h.hexdigest()
+        return result
         
         
 #initialize the Blockchain Class
