@@ -70,11 +70,56 @@
 
     <script>
         $(function () {
+
+            $.ajax({
+                url: '/chain',
+                type: 'GET',
+                success: function (res) {
+                    console.log(res,'Chain Get')
+                    let transactions = []
+                    let count = 1
+                    for (let i = 0; i < res['length']; i++) {
+                        let result = res['chain'][i]['transaction']
+                        for (let j = 0; j < result.length; j++) {
+                            console.log(res['chain'][i]['timestamp'],'checking the time stamp')
+                            let transaction = [
+                                count,
+                                res['chain'][i]['transaction'][j]['sender_public_key'],
+                                res['chain'][i]['transaction'][j]['recipient_public_key'],
+                                res['chain'][i]['transaction'][j]['amount'],
+                                new Date(res['chain'][i]['timestampt']),
+                                res['chain'][i]['block_number'],
+                                
+                            ]
+                            transactions.push(transaction);
+                            count += 1
+                            
+                        }
+                    }
+                    $('#transaction_table').dataTable({
+                        data: transactions,
+                        columns: [
+                            { title: '#' },
+                            { title: 'Sender Public Key' },
+                            { title: 'Recipient Public Key' },
+                            { title: 'Amount' },
+                            { title: 'Timestamp' },
+                            { title: 'Block#' }
+                        ],
+                        columnDefs: [{ targets: [1, 2, 3,4,5], render: $.fn.dataTable.render.ellipsis(25) }]
+                    });
+                },
+                error: function (err) {
+                    console.log(err)
+                }
+
+            })
+
             $.ajax({
                 url: '/transactions/get',
                 type: 'GET',
                 success: function (res) {
-                    console.log(res)
+                    console.log(res,'Transaction get')
                     let transactions = []
                     let count = 1
                     for (let i = 0; i < res['transactions'].length; i++) {
@@ -96,7 +141,7 @@
                             { title: 'Recipient Public Key' },
                             { title: 'Amount' },
                         ],
-                        columnDefs:[{targets:[1,2,3],render:$.fn.dataTable.render.ellipsis(25)}]
+                        columnDefs: [{ targets: [1, 2, 3], render: $.fn.dataTable.render.ellipsis(25) }]
                     });
                 },
                 error: function (err) {
@@ -105,14 +150,14 @@
 
             })
 
-            $('#mine_button').click(function(){
+            $('#mine_button').click(function () {
                 $.ajax({
-                    url:'/mine',
-                    type:'GET',
-                    success:function(res){
+                    url: '/mine',
+                    type: 'GET',
+                    success: function (res) {
                         window.location.reload();
                     },
-                    error:function(err){
+                    error: function (err) {
 
                     }
                 })

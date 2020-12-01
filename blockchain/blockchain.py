@@ -121,6 +121,18 @@ def mine():
             }
     return jsonify(response),200
 
+
+@app.route('/chain',methods=['GET'])
+def get_chain():
+
+    response ={
+        'chain': blockchain.chain,
+        'length': len(blockchain.chain)
+     }
+    return jsonify(response),200
+
+
+
 @app.route('/transaction/new',methods=['POST'])
 def new_transaction():
     values = request.form
