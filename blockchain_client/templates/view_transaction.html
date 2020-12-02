@@ -1,11 +1,120 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Blockchain Web Portal</title>
+    <link rel="stylesheet" href="../static/vendor/bootstrap/css/bootstrap.min.css">
+    <link rel="stylesheet" href="../static/vendor/DataTables/css/datatables.min.css">
+    <link rel="stylesheet" href="../static/vendor/font-awesome/font-awesome.min.css">
+    <link rel="stylesheet" href="../static/css/custom.css">
+
+    <script src="../static/vendor/jquery/jquery.min.js"></script>
+    <script src="../static/vendor/bootstrap/js/bootstrap.min.js"></script>
+    <script src="../static/vendor/DataTables/js/datatables.min.js"></script>
+    <script src="../static/vendor/DataTables/js/ellipsis.js"></script>
 </head>
+
 <body>
-    <h1>VIEW TRANSACTIONS</h1>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container">
+            <a href="#" class="navbar-brand">Client Dashboard</a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav ml-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Create Wallet</a>
+                    </li>
+                    <li class="nav-item ">
+                        <a class="nav-link" href="../make/transaction">Make Transaction</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="./view/transaction">View Transaction</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card-body">
+                    <h4 class="card-title">View Transactions</h4>
+                    <p class="card-text">Enter a Blockchain Node URL and Click On View Transactions Button</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container alert alert-dark">
+        <div class="row">
+            <label class="col-sm-2">Node URL:</label>
+            <div class="col-sm-10">
+                <textarea id="node_url" cols="30" rows="2" class="form-control">http://127.0.0.1</textarea>
+            </div>
+        </div>
+        <br>
+        <div class="row">
+            <div class="col-md-12 text-center">
+                <input type="button" class="btn btn-primary btn-md" id="view_transactions" value="View Transactions">
+            </div>
+        </div>
+        <br>
+        <hr>
+        <div class="container">
+            <table id="transactions_table" class="table tablestriped table-bordered" cellspacing="0" width="100%">
+
+            </table>
+        </div>
+    </div>
+
+
+    <script>
+        $(function () {
+            $('#view_transactions').click(function () {
+                $.ajax({
+                    url: $('#node_url').val() + '/chain',
+                    type: 'GET',
+                    success: function (res) {
+                        let transactions = []
+                        let count = 1
+                        for (let i = 0; i < res['length']; i++) {
+                            let result = res['chain'][i]['transaction']
+                            for (let j = 0; j < result.length; j++) {
+                                console.log(res['chain'][i]['timestamp'], 'checking the time stamp')
+                                let transaction = [
+                                    count,
+                                    res['chain'][i]['transaction'][j]['sender_public_key'],
+                                    res['chain'][i]['transaction'][j]['recipient_public_key'],
+                                    res['chain'][i]['transaction'][j]['amount'],
+                                    new Date(res['chain'][i]['timestampt']),
+                                    res['chain'][i]['block_number'],
+
+                                ]
+                                transactions.push(transaction);
+                                count += 1
+
+                            }
+                        }
+                        $('#transactions_table').dataTable({
+                        data: transactions,
+                        columns: [
+                            { title: '#' },
+                            { title: 'Sender Public Key' },
+                            { title: 'Recipient Public Key' },
+                            { title: 'Amount' },
+                            { title: 'Timestamp' },
+                            { title: 'Block#' }
+                        ],
+                        columnDefs: [{ targets: [1, 2, 3,4,5], render: $.fn.dataTable.render.ellipsis(25) }]
+                    });
+                    },
+                    error: function (err) {
+                        console.log(err)
+                    }
+                })
+            })
+        });
+    </script>
 </body>
+
 </html>

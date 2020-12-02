@@ -26,7 +26,7 @@
                         <a class="nav-link" href="/">Home</a>
                     </li>
                     <li class="nav-item ">
-                        <a class="nav-link" href="./make/transaction">Configure</a>
+                        <a class="nav-link" href="./configure">Configure</a>
                     </li>
                 </ul>
             </div>
@@ -159,6 +159,23 @@
                     },
                     error: function (err) {
 
+                    }
+                })
+            })
+
+            $('#refresh_transaction').click(function(){
+                window.location.reload()
+            })
+
+            $('#refresh_blockchain').click(function(){
+                $.ajax({
+                    url:'/nodes/resolve',
+                    type:'GET',
+                    success:function(res){
+                        window.location.reload()
+                    },
+                    error:function(err){
+                        console.log(err)
                     }
                 })
             })

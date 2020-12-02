@@ -9,6 +9,8 @@ import binascii
 from uuid import uuid4
 import json
 import hashlib
+import requests
+from urllib.parse import urlparse
 
 
 MINING_SENDER = 'The Blockchain'
@@ -25,9 +27,22 @@ class Blockchain:
         """
         self.transaction = []
         self.chain = []
+        self.nodes = set()
         self.node_id = str(uuid4()).replace('-','')
         #creating the genesis block
         self.create_block(0,'00')
+
+    def register_node(self,node_url):
+        parsed_url = urlparse(node_url)
+        if parsed_url.netloc:
+            self.nodes.add(parsed_url.netloc)
+        elif parsed_url.path:
+            self.nodes.add(parsed_url.path)
+        else:
+            raise ValueError('Invalid URL')
+
+
+
     def create_block(self,nonce,previous_hash):
         """
         Add a block of trancsaction to the blockchain
@@ -102,7 +117,48 @@ class Blockchain:
         h.update(block_string)
         result = h.hexdigest()
         return result
-        
+
+    def valid_chain(self,chain):
+        last_block = chain[0]
+        current_index = 1
+
+        while current_index < len(chain):
+            block = chain[current_index]
+            if block['previous_hash'] != self.hash(last_block):
+                return False
+            transactions = block['transactions'][:-1]
+            transaction_elements = ['sender_public_key','recipient_public_key','amount']
+            transaction = [OrderedDict((k, transaction[k]) for k in transaction_elements) for transaction in transactions]
+            if not self.valid_proof(transaction,block['previous_hash'],block['nonce'],MINING_DIFFICULTY):
+                return False
+            last_block = block
+            current_index += 1
+        return True
+
+    def resolve_conflicts(self):
+
+        neighbours = self.nodes
+        new_chain = None
+
+        max_length = len(self.chain)
+        for node in neighbours:
+            response = requests.get('http://' + node + '/chain')
+            if response.status_code == 200:
+                length = response.json()['length']
+                chain = response.json()['chain']
+
+                if length > max_length and self.valid_chain(chain):
+                    max_length = length
+                    new_chain = chain
+
+        if new_chain:
+            self.chain = new_chain
+            return True
+
+        return False
+
+    
+
         
 #initialize the Blockchain Class
 blockchain = Blockchain()
@@ -114,6 +170,12 @@ CORS(app)
 @app.route('/')
 def index():
     return render_template('./index.html')
+
+
+@app.route('/configure')
+def configure():
+    return render_template('./configure.html')
+
 
 @app.route('/transactions/get',methods=['GET'])
 def get_transaction():
@@ -156,6 +218,47 @@ def get_chain():
     return jsonify(response),200
 
 
+@app.route('/nodes/get',methods=['GET'])
+def get_nodes():
+
+    nodes = list(blockchain.nodes)
+    response = {'nodes': nodes}
+
+    return jsonify(response),200
+
+
+@app.route('/nodes/resolve',methods=['GET'])
+def consensus():
+    replaced = blockchain.resolve_conflicts()
+
+    if replaced:
+        response = {
+            'message':'Our Chain Was Replaces',
+            'new_chain':blockchain.chain
+        }
+    else:
+        response = {
+            'message':'Our Chain is Authoritative',
+            'chain':blockchain.chain
+        }
+    return jsonify(response),200
+
+@app.route('/nodes/register',methods=['POST'])
+def register_node():
+    values = request.form
+    nodes = values.get('nodes').replace(' ','').split(',')
+
+    if nodes is None:
+        return 'This is an Error. Please Supplu a valid list of nodes', 400
+    for node in nodes:
+        blockchain.register_node(node)
+
+    response ={
+        'message':'Nodes Have Been Added',
+        'total_nodes': [node for node in blockchain.nodes]
+    }
+
+    return jsonify(response),200
 
 @app.route('/transaction/new',methods=['POST'])
 def new_transaction():
